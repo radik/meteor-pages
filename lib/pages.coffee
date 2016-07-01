@@ -108,7 +108,6 @@
     # Instance variables
 
     @init = @beforeFirstReady = true
-    @debug ?= (PAGES_DEBUG? and PAGES_DEBUG) or process?.env.PAGES_DEBUG
     @subscriptions = length: 0, order: []
     @userSettings = {}
     @_currentPage = 1
