@@ -1,12 +1,12 @@
 Package.describe({
-  "name": "alethes:pages",
+  "name": "radik:pages",
   "summary": "State of the art, out of the box Meteor pagination",
   "version": "1.8.6",
   "git": "https://github.com/alethes/meteor-pages"
 });
 
 Package.onUse(function(api){
-    api.versionsFrom("METEOR@1.0.3.1")
+    api.versionsFrom("METEOR@1.0.3.1");
     api.use([
         "meteor-platform",
         "check",

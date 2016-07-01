@@ -1,6 +1,9 @@
 Meteor Pages
 ============
 
+<b style="color: red">NOTE!</b> This is fork of https://github.com/alethes/meteor-pages
+with [this issue](https://github.com/alethes/meteor-pages/issues/204) quick fix.
+
 State of the art, out of the box Meteor pagination
 --------------------------------------------------
 

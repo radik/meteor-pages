@@ -1,9 +1,9 @@
 @__Pages = class Pages
 
   settings:
-    
+
     #settingName: [canBeMadeAvailableToTheClient, expectedTypes(s), defaultValue]
-    
+
     dataMargin: [true, Number, 3]
     divWrapper: [true, Match.OneOf(
       Match.Optional(String)
@@ -24,9 +24,9 @@
     routerTemplate: [true, String, "pages"]
     routerLayout: [true, Match.Optional(String), undefined]
     sort: [true, Object, {}]
-    
+
     # Unavailable to the client after initialization
-    
+
     auth: [false, Match.Optional(Function), undefined]
     availableSettings: [false, Object, {}]
     fastRender: [false, Boolean, false]
@@ -50,15 +50,15 @@
     tableItemTemplate: [false, String, "_pagesTableItem"]
     tableTemplate: [false, String, "_pagesTable"]
     templateName: [false, Match.Optional(String), undefined] #Defaults to collection name
-  
+
   # Prototype variables (shared between instances)
-  
+
   _nInstances: 0
   collections: {}
   instances: {}
-  
+
   methods:
-    
+
     "CountPages": (sub) ->
       n = sub.get "nPublishedPages"
       return n  if n?
@@ -70,7 +70,7 @@
         ]
       ).count() / (sub.get "perPage")
       n or 1
-    
+
     "Set": (k, v, sub) ->
       if !@settings[k]?
         @error "invalid-option", "Invalid option name: #{k}."
@@ -81,7 +81,7 @@
 
       if !@availableSettings[k] or (_.isFunction(@availableSettings[k]) and !@availableSettings[k] v, sub)
         @error "forbidden-option", "Changing #{k} not allowed."
-      
+
       changes = 0
       if v?
         changes = @_set k, v, cid: sub.connection.id
@@ -89,7 +89,7 @@
         for _k, _v of k
           changes += @set _k, _v, cid: sub.connection.id
       changes
-    
+
     "Unsubscribe": ->
       cid = arguments[arguments.length - 1].connection.id
       subs = {}
@@ -100,13 +100,13 @@
           delete @subscriptions[k]
       @subscriptions.length = 0
       true
-  
+
   constructor: (collection, settings = {}) ->
     unless @ instanceof Meteor.Pagination
       throw new Meteor.Error "missing-new", "The Meteor.Pagination instance has to be initiated with `new`"
-    
+
     # Instance variables
-    
+
     @init = @beforeFirstReady = true
     @debug ?= (PAGES_DEBUG? and PAGES_DEBUG) or process?.env.PAGES_DEBUG
     @subscriptions = length: 0, order: []
@@ -122,30 +122,30 @@
     @[(if Meteor.isServer then "server" else "client") + "Init"]()
     @registerInstance()
     @
-    
+
   error: (code, msg) ->
     msg = code  if !code?
     throw new Meteor.Error code, msg
 
   # Server initialisation
-  
+
   serverInit: ->
     @setMethods()
     self = @
-    
+
     # Remove the per-connection settings when a client disconnects from the server
-    
+
     Meteor.onConnection (connection) =>
       connection.onClose =>
         delete @userSettings[connection.id]
-        
+
     # Publish the collection that we're paginating, taking a page number as a parameter.
-        
+
     Meteor.publish @id, (page) ->
       self.publish.call self, page, @
-  
+
   # Client initialisation
-  
+
   clientInit: ->
     @requested = {}
     @received = {}
@@ -159,7 +159,7 @@
       @maxSubscriptions = 1
     @setTemplates()
     Tracker.autorun =>
-      #@log "Status changed"
+      @log "Status changed"
       Meteor.status()
       Meteor.userId?()
       @countPages()
@@ -167,11 +167,11 @@
     @templateName ?= @name
     Template[@templateName].onRendered =>
       @setInfiniteTrigger() if @infinite
-  
+
   #Stops all subscriptions and reloads the current page, provided it's available and @resetOnReload isn't true.
-  
+
   reload: _.throttle ->
-    #@log "Reloading"
+    @log "Reloading"
     @unsubscribe()
     @countPages (total) =>
       p = @currentPage()
@@ -179,10 +179,10 @@
       @sess "currentPage", false
       @sess "currentPage", p
   , 1000, trailing: false
-  
+
   unsubscribe: (page, cid) ->
     return  if @beforeFirstReady
-    #@log "Unsubscribing #{page} #{cid}"
+    @log "Unsubscribing #{page} #{cid}"
     if !page?
       for k, sub of @subscriptions
         continue  if k in ["length", "order"]
@@ -200,7 +200,7 @@
         delete @subscriptions[cid][page]
         @subscriptions.length--
     else if @subscriptions[page]
-      #@log "Stopping sub #{page}"
+      @log "Stopping sub #{page}"
       @subscriptions[page].stop()
       delete @subscriptions[page]
       delete @requested[page]
@@ -208,21 +208,21 @@
       @subscriptions.order = _.without @subscriptions.order, Number page
       @subscriptions.length--
     true
-  
+
   setDefaults: ->
     for k, v of @settings
       if v[2]?
         @[k] ?= v[2]
-  
+
   syncSettings: (cb) ->
     S = {}
     for k, v of @settings
       if v[0]
         S[k] = @[k]
     @set S, if cb? then {cb: cb.bind(@)} else null
-  
+
   # Creates server-side methods for this pagination *instance* by prefixing them with our unique id
-  
+
   setMethods: ->
     nm = {}
     self = @
@@ -235,17 +235,17 @@
           r = f.apply self, arg
           r
       )(f)
-      
+
     Meteor.methods nm
-  
+
   # Get's the server's method name for this pagination instance
-  
+
   getMethodName: (name) ->
     "#{@id}/#{name}"
-  
+
   # Calls this instance's version of a given server method (first argument).
   # If the last argument is a function callback, it's bound to this instance
-    
+
   call: (args...) ->
     check args, Array
     if args.length < 1
@@ -255,9 +255,9 @@
     if _.isFunction args[last]
       args[last] = args[last].bind @
     Meteor.call.apply @, args
-  
+
   # Sets/gets a session variable for this instance
-  
+
   sess: (k, v) ->
     return  if !Session?
     k = "#{@id}.#{k}"
@@ -265,17 +265,17 @@
       Session.set k, v
     else
       Session.get k
-      
+
   # Gets a given setting
-  #      
+  #
   # When there's a connection id we store this setting on a per-connection basis, otherwise we just
   # set the setting on this pagination instance
 
   get: (setting, connectionId) ->
     @userSettings[connectionId]?[setting] ? @[setting]
-  
+
  # Sets the options for this instance
-    
+
   set: (k, opts...) ->
     ch = 0
     switch opts.length
@@ -325,7 +325,7 @@
     v
 
   #Sanitizes all regular expressions within an object using ::sanitizeRegex()
-  
+
   sanitizeRegexObj: (obj) ->
     if _.isRegExp obj
       return @sanitizeRegex obj
@@ -337,24 +337,24 @@
     obj
 
   # Sets a specific option
-      
+
   _set: (k, v, opts = {}) ->
     check k, String
     ch = 1
-    
+
     # Check that we're the server, or that we're being initialised, or that this setting can be changed
     # after initialization, or that the setting doesn't yet exist on this instance.
-    
+
     if Meteor.isServer or !@[k]? or @settings[k]?[0] or opts.init
-    
+
       # Check the type of the value against the @settings array
       if @settings[k]?[1]? and @settings[k]?[1] isnt true
         check v, @settings[k][1]
-      
+
       @sanitizeRegexObj v
-      
+
       # Set the parameter on this instance (client)  
-      
+
       oldV = @get k, opts?.cid
 
       return 0  if @valuesEqual v, oldV
@@ -377,20 +377,20 @@
             @userSettings[opts.cid][k] = v
         else
           @[k] = v
-        
+
         opts.cb? ch
     else
       @onDeniedSetting.call @, k, v
     ch
-    
+
   valuesEqual: (v1, v2) ->
     if _.isFunction v1
       _.isFunction(v2) and v1.toString() is v2.toString()
     else
       _.isEqual v1, v2
-  
-  # 
-  
+
+  #
+
   setId: (name) ->
     if @templateName
       name = @templateName
@@ -402,15 +402,15 @@
         name = name + "2"
     @id = "pages_" + name
     @name = name
-  
+
   #
-  
+
   registerInstance: ->
     Pages::_nInstances++
     Pages::instances[@name] = @
-  
+
   # Set the collection on which this instance operates. Creates a new one if a name is passed in.
-  
+
   setCollection: (collection) ->
     if typeof collection is "object"
       Pages::collections[collection._name] = collection
@@ -424,19 +424,19 @@
         @Collection instanceof Mongo.Collection or @error "collection-inaccessible", "The '#{collection}' collection 
         was created outside of <Meteor.Pagination>. Pass the collection object
         instead of the collection's name to the <Meteor.Pagination> constructor."
-    
+
     @setId @Collection._name
-    
+
     # Create a collection based on the instance's unique id
-    
+
     # @PaginatedCollection = new Mongo.Collection @id
-  
+
   linkTo: (page)->
     if Router.current()?.params
       params = Router.current().params
       params.page = page
       Router.routes["#{@name}_page"].path params
-  
+
   setRouter: ->
     if @router is "iron-router"
       if @route.indexOf(":page") is -1
@@ -449,12 +449,12 @@
       l = @routerLayout ? undefined
       self = @
       init = true
-      
+
       Router.map ->
         unless self.infinite
-        
+
           # Create a route that takes a page number
-         
+
           @route "#{self.name}_page",
             path: pr
             template: t
@@ -468,10 +468,10 @@
                 self.routeSettings @
               Tracker.nonreactive =>
                 self.onNavClick page
-              @next()               
-        
+              @next()
+
         # Create one or more routes for the home (first) page
-              
+
         if self.homeRoute
           if _.isString self.homeRoute
             self.homeRoute = [self.homeRoute]
@@ -487,27 +487,27 @@
                   self.sess "oldPage", 1
                   self.sess "currentPage", 1
                 @next()
-                      
+
       # If using FastRender, set it up for these routes
-                
+
       if Meteor.isServer and @fastRender
         self = @
         FastRender.route pr, (params) ->
           @subscribe self.id, parseInt params.page
         FastRender.route @homeRoute, ->
-          @subscribe self.id, 1  
+          @subscribe self.id, 1
 
   isEmpty: ->
     @isReady() and @Collection.find(_.object [["_#{@id}_i", 0]]).count() is 0
-  
+
   setPerPage: ->
     @perPage = if @pageSizeLimit < @perPage then @pageSizeLimit else @perPage
-  
+
   setTemplates: ->
     name = @templateName or @name
     if @table and @itemTemplate is "_pagesItemDefault"
       @itemTemplate = @tableItemTemplate
-    
+
     for i in [@navTemplate, @pageTemplate, @itemTemplate, @tableTemplate]
       tn = @id + i
       Template[tn] = new Blaze.Template "Template.#{tn}", Template[i].renderFunction
@@ -515,20 +515,20 @@
       helpers = pagesData: @
       _.each Template[i].__helpers, (helper, name) =>
         if name[0] is " "
-          helpers[name.slice(1)] = _.bind helper, @ 
+          helpers[name.slice(1)] = _.bind helper, @
       Template[tn].helpers helpers
-      
+
     # Set our helpers on the main template set for this pagination  
-      
+
     Template[name].helpers
       pagesData: @
       pagesNav: Template[@id + @navTemplate]
       pages: Template[@id + @pageTemplate]
-  
+
   # Get the number of pages from the server
-      
+
   countPages: _.throttle (cb) ->
-    #@log "Counting pages"
+    @log "Counting pages"
     if !Meteor.status().connected and Package["ground:db"]?
       n = @Collection.findOne({}, {sort: _.object [["_#{@id}_p", -1]]})?["_#{@id}_p"] or 0
       @setTotalPages n
@@ -560,21 +560,22 @@
       while @subscriptions.length >= @maxSubscriptions
         @unsubscribe @subscriptions.order[0]
       true
-  
+
   # Called from the Meteor.publish call made during init, this publishes the paginated collection
   #
   # "this" will be the pagination instance
   # "page" is the page number to publish
   # "sub" is the publish handler object which (the "this" object when the function passed to Meteor.publish is called)
-  
+
   publish: (page, sub) ->
+    console.log(arguments)
     check page, Number
     check sub, Match.Where (s) ->
       s.ready?
     cid = sub.connection.id
     init = true
 
-    #@log "Publishing page #{page}"
+    @log "Publishing page #{page}"
 
     @subscriptions[sub.connection.id] ?= length: 0
 
@@ -582,30 +583,30 @@
 
     # Create get and set functions for this specific connection (the settings will end up in the @userSettings,
     # stored in an object indexed under the collection id)
-    
+
     get = sub.get = _.bind ((cid, k) -> @get k, cid), @, cid
     set = sub.set = _.bind ((cid, k, v) -> @set k, v, cid: cid), @, cid
-    
+
     query = _.bind ((sub, get, set) ->
 
       delete @userSettings[cid]?.realFilters
       delete @userSettings[cid]?.nPublishedPages
-      
+
       @setPerPage()
-      
+
       skip = (page - 1) * get "perPage"
       skip = 0 if skip < 0
-      
+
       filters = get "filters"
-      
-      options = 
+
+      options =
         sort: get "sort"
         fields: get "fields"
         skip: skip
         limit: get "perPage"
-      
+
       # Call the authentication function if it's supplied
-      
+
       if @auth?
         r = @auth.call @, skip, sub
         if !r
@@ -625,38 +626,38 @@
             options = r[1]
         else if _.isFunction r.fetch
           c = r
-      
+
       if !EJSON.equals({}, filters) and !EJSON.equals(get("filters"), filters)
         set "realFilters", filters
-      
+
       # Get a cursor to the base collection
-      #@log "Publishing", filters, options
+      @log "Publishing", filters, options
       c or @Collection.find filters, options
-    
+
     ), @, sub, get, set
 
     c = query()
 
     #watchCollection: ->
     #c = @Collection.find()
-    
+
     self = @
-    
+
     # We need to call sub's added callback when a new document is added, however
     # for the purposes of pagination we also need to include the index of each document.
     #
     # Furthermore, an added document might increase the index of other documents on this page.
     #
     # We therefore need to use the observe method to handle this.
-    
+
     handle = c.observe
       addedAt: _.bind ((sub, query, doc, at) ->
         return  if init
-        #@log "#{doc.id} added at #{page}, #{at}"
+        @log "#{doc.id} added at #{page}, #{at}"
         doc["_#{@id}_p"] = page
         doc["_#{@id}_i"] = at
         id = doc._id
-        delete doc._id  
+        delete doc._id
         # Add to @Collection
         query().forEach (o, i) =>
           if i is at
@@ -664,34 +665,34 @@
           else
             sub.changed @Collection._name, o._id, _.object [["_#{@id}_i", i]]
       ), @, sub, query
-    
+
     # For the other cases the more efficient observeChanges will suffice...
-      
+
     handle2 = c.observeChanges
       movedBefore: _.bind ((sub, query, id, before) ->
-        #@log "#{id} moved before #{before}"
+        @log "#{id} moved before #{before}"
         query().forEach (o, i) =>
           sub.changed @Collection._name, o._id, _.object [["_#{@id}_i", i]]
       ), @, sub, query
-      
+
       changed: _.bind ((sub, query, id, fields) ->
-        #@log "#{id} changed"
+        @log "#{id} changed"
         try
           sub.changed @Collection._name, id, fields
         catch e
       ), @, sub, query
-      
+
       removed: _.bind ((sub, query, id) ->
-        #@log "#{id} removed"
+        @log "#{id} removed"
         try
           sub.removed @Collection._name, id
           query().forEach (o, i) =>
             sub.changed @Collection._name, o._id, _.object [["_#{@id}_i", i]]
         catch e
       ), @, sub, query
-    
+
     # Add the documents from this query 
-    
+
     n = 0
     c.forEach (doc, index, cursor) =>
       n++
@@ -702,7 +703,7 @@
     init = false
 
     sub.onStop _.bind ((page) ->
-      #@log "#{sub.connection.id}: page #{page} subscription stopped"
+      @log "#{sub.connection.id}: page #{page} subscription stopped"
       delete @subscriptions[sub.connection.id][page]
       @subscriptions[sub.connection.id].length--
       handle.stop()
@@ -711,34 +712,34 @@
     @subscriptions[sub.connection.id][page] = sub
     @subscriptions[sub.connection.id].length++
     sub.ready()
-  
-  # Sets the state of the current page as "loading" (ready = false)  
-  
+
+  # Sets the state of the current page as "loading" (ready = false)
+
   loading: (p) ->
     if !@fastRender and p is @currentPage()
       @sess "ready", false
-  
+
   now: ->
     (new Date()).getTime()
-  
+
   log: ->
     a = ["Pages: #{@name} -"]
     for i in arguments
       a.push i
     @debug and console.log.apply console, a
-  
+
   logRequest: (p) ->
     @timeLastRequest = @now()
     @requesting = p
     @requested[p] = 1
-  
+
   logResponse: (p) ->
     delete @requested[p]
     @received[p] = 1
-  
+
   clearQueue: ->
     @queue = []
-  
+
   neighbors: (page) ->
     n = []
     if @dataMargin is 0 or @maxSubscriptions < 2
@@ -752,17 +753,17 @@
       if pp > 0
         n.push pp
     n
-  
+
   queueNeighbors: (page) ->
     for p in @neighbors page
       @queue.push p  if !@received[p] and !@requested[p] and p not in @queue
-  
+
   paginationNavItem: (label, page, disabled, active = false) ->
     p: label
     n: page
     active: if active then "active" else ""
     disabled: if disabled then "disabled" else ""
-  
+
   navigationNeighbors: ->
     page = @currentPage()
     total = @sess "totalPages"
@@ -788,7 +789,7 @@
     for i, k in n
       n[k]['_p'] = @
     n
-  
+
   onNavClick: (n) ->
     if n <= @sess("totalPages") and n > 0
       Tracker.nonreactive =>
@@ -796,11 +797,11 @@
         if @received[cp]
           @sess "oldPage", cp
       @sess "currentPage", n
-  
+
   setInfiniteTrigger: ->
     @scrollBoxSelector = @scrollBoxSelector || window
     @scrollBox = $(@scrollBoxSelector)
-    @scrollBox.scroll _.bind (
+    $(window).scroll _.bind (
       _.throttle ->
         t = @infiniteTrigger
         oh = @scrollBox[0].scrollHeight
@@ -815,26 +816,24 @@
 
         if (@scrollBox.scrollTop() + @scrollBox[0].offsetHeight >= l)
           @sess("limit", @sess("limit") + @infiniteStep)
-          
-          ###
+
           if @lastPage < @sess "totalPages"
             console.log "i want page #{@lastPage + 1}"
             @sess("currentPage", @lastPage + 1)
-          ###
-          
+
       , @infiniteRateLimit * 1000
     ), @
-  
+
   checkQueue: _.throttle ->
-    #@log "Checking queue"
+    @log "Checking queue"
     cp = @currentPage()
     neighbors = @neighbors cp
-    
+
     # If we haven't yet received the current page then clear all the other subscriptions and requests
     # and get the current page
-    
+
     if !@received[cp]
-      #@log "Haven't yet received the current page (#{cp})."
+      @log "Haven't yet received the current page (#{cp})."
       @clearQueue()
       @requestPage cp
       cp = String cp
@@ -845,34 +844,34 @@
             delete @subscriptions[k]
             @subscriptions.length--
           delete @requested[k]
-    
+
     # If we do have the current page then queue the neighbours
-    
+
     else if @queue.length
-      #@log "Current page (#{cp}) already received."
+      @log "Current page (#{cp}) already received."
       while @queue.length > 0
         i = @queue.shift()
         if i in neighbors
-          #@log neighbors
+          @log neighbors
           @requestPage i
           break
   , 500
-  
+
   currentPage: ->
     if Meteor.isClient and @sess("currentPage")?
       @sess "currentPage"
     else
       @_currentPage
-  
+
   isReady: ->
     @sess "ready"
-  
+
   ready: (p) ->
     if p is true or p is @currentPage() and Session?
       @sess "ready", true
-  
+
   checkInitPage: ->
-    if @init and !@initPage 
+    if @init and !@initPage
       if @router
         Router.current()?.route?.getName()
         try
@@ -884,7 +883,7 @@
     @init = false
     @sess "oldPage", @initPage
     @sess "currentPage", @initPage
-  
+
   getPage: (page) ->
     if Meteor.isClient
       page = @currentPage()  if !page?
@@ -892,18 +891,18 @@
       return  if page is NaN
       total = @sess "totalPages"
       return @ready true  if total is 0
-      
+
       # Request data for the page
-      
+
       if page <= total
         @requestPage page
         @queueNeighbors page
         @checkQueue()
-      
+
       # Return the content of this page 
       #
       # The contents will be updated (as will the page) as data arrives from the server
-      
+
       if @infinite
         n = @Collection.find({},
           fields: @fields
@@ -936,11 +935,11 @@
             ##########
             @requestPage @sess "currentPage"
             @countPages()
-      
+
       c.fetch()
-  
+
   # Subscribes to the given page
-  
+
   requestPage: (page) ->
     return  if !page or @requested[page] or @received[page]
     @log "Requesting page #{page}"
@@ -958,7 +957,7 @@
     else
       @enforceSubscriptionLimit()
       Meteor.defer _.bind ((page) ->
-        #@log "subscribing to page #{page}"
+        @log "subscribing to page #{page}"
         @subscriptions[page] = Meteor.subscribe @id, page,
           onReady: _.bind (page) ->
             @onPage page
@@ -975,11 +974,11 @@
               @error e.message
         @subscriptions.order.push page
         @subscriptions.length++
-        #@log "Number of subscriptions: #{@subscriptions.length}"
+        @log "Number of subscriptions: #{@subscriptions.length}"
       ), @, page
-  
+
   # Called when a page has been received
-  
+
   onPage: (page) ->
     @log "Received page #{page}"
     @beforeFirstReady = false
