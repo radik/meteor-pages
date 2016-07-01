@@ -108,6 +108,7 @@
     # Instance variables
 
     @init = @beforeFirstReady = true
+    @debug ?= (PAGES_DEBUG? and PAGES_DEBUG) or process?.env.PAGES_DEBUG
     @subscriptions = length: 0, order: []
     @userSettings = {}
     @_currentPage = 1
@@ -567,7 +568,6 @@
   # "sub" is the publish handler object which (the "this" object when the function passed to Meteor.publish is called)
 
   publish: (page, sub) ->
-    console.log(arguments)
     check page, Number
     check sub, Match.Where (s) ->
       s.ready?
