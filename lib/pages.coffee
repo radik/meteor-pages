@@ -147,6 +147,7 @@
   # Client initialisation
 
   clientInit: ->
+    @log "Client init"
     @requested = {}
     @received = {}
     @queue = []
@@ -636,6 +637,11 @@
     ), @, sub, get, set
 
     c = query()
+
+    # if auth func returns falsy value, then end sub
+    if !c
+      sub.ready()
+      return
 
     #watchCollection: ->
     #c = @Collection.find()

@@ -1,7 +1,7 @@
 Package.describe({
   "name": "radik:pages",
   "summary": "State of the art, out of the box Meteor pagination",
-  "version": "1.8.6_3",
+  "version": "1.8.6_4",
   "git": "https://github.com/alethes/meteor-pages"
 });
 
